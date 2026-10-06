@@ -129,7 +129,7 @@ const ESTATE_DATA = [
     size: '5,800 sq ft', 
     kanji: '天閣', 
     elevation: '+2,400m', 
-    desc: 'The pinnacle crown of the estate. Floating above the cosmic star field with private stone bridges and obsidian balconies.',
+    desc: 'The pinnacle crown of the estate. Floating above the celestial star field with private stone bridges and obsidian balconies.',
     plots: generateTenPlots(28.5, 'Sanctuary')
   },
   { 
@@ -229,22 +229,15 @@ function MountainBase({ position, scale }) {
   return <primitive object={scene} position={position} scale={scale} />;
 }
 
-// =========================================================================
-// REALISTIC ANIME-STYLE SHINING CELESTIAL STAR FIELD
-// =========================================================================
+// Glowing Anime Celestial Star Field
 function AnimeCelestialStarfield({ count = 900 }) {
   const pointsRef = useRef();
   const diamondRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  // 1. Natural Deep Star Particle Field
-  const [positions, baseScales, flickerPhases] = useMemo(() => {
+  const [positions] = useMemo(() => {
     const pos = new Float32Array(count * 3);
-    const scales = new Float32Array(count);
-    const phases = new Float32Array(count);
-
     for (let i = 0; i < count; i++) {
-      // Distribute over wide sphere
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 2 - 1);
       const radius = 65 + Math.random() * 70;
@@ -252,14 +245,10 @@ function AnimeCelestialStarfield({ count = 900 }) {
       pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
       pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta) + 15;
       pos[i * 3 + 2] = radius * Math.cos(phi);
-
-      scales[i] = 0.6 + Math.random() * 1.8;
-      phases[i] = Math.random() * Math.PI * 2;
     }
-    return [pos, scales, phases];
+    return [pos];
   }, [count]);
 
-  // 2. High-Magnitude Bright Anime Cross/Diamond Stars
   const brightStars = useMemo(() => {
     const list = [];
     for (let i = 0; i < 48; i++) {
@@ -280,13 +269,11 @@ function AnimeCelestialStarfield({ count = 900 }) {
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     
-    // Slow galaxy rotation
     if (pointsRef.current) {
       pointsRef.current.rotation.y = t * 0.008;
       pointsRef.current.rotation.x = Math.sin(t * 0.004) * 0.03;
     }
 
-    // Twinkling & sparkling bright diamond stars
     if (diamondRef.current) {
       for (let i = 0; i < brightStars.length; i++) {
         const s = brightStars[i];
@@ -303,7 +290,6 @@ function AnimeCelestialStarfield({ count = 900 }) {
 
   return (
     <group>
-      {/* Background Star Points */}
       <points ref={pointsRef}>
         <bufferGeometry>
           <bufferAttribute
@@ -323,7 +309,6 @@ function AnimeCelestialStarfield({ count = 900 }) {
         />
       </points>
 
-      {/* Sparkling 3D Anime Diamond Stars with Emissive Bloom */}
       <instancedMesh ref={diamondRef} args={[null, null, brightStars.length]}>
         <octahedronGeometry args={[0.35, 0]} />
         <meshStandardMaterial 
@@ -335,7 +320,6 @@ function AnimeCelestialStarfield({ count = 900 }) {
         />
       </instancedMesh>
 
-      {/* Atmospheric Anime Ambient Sparkles */}
       <Sparkles 
         count={280} 
         scale={[110, 80, 110]} 
@@ -677,7 +661,7 @@ function SceneController({ onOpenCategory, onExploreClick }) {
           </div>
         ))}
 
-        {/* Ground Floor */}
+        {/* Ground Floor with Smooth Ascend to Peak */}
         <div className="h-screen flex items-center justify-center">
           <div className="text-center pointer-events-auto bg-[#0e0f14]/90 backdrop-blur-2xl p-8 border border-zinc-800 shadow-2xl rounded-2xl max-w-sm">
             <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold mb-1 block">
@@ -750,9 +734,7 @@ function SnappingControls({ enabled }) {
   ) : null;
 }
 
-// =========================================================================
-// REAL ESTATE AI BROKER (MASTER CHEN)
-// =========================================================================
+// Gemini-Style Real Estate AI Assistant
 function GeminiRealEstateBrokerDrawer({ isOpen, onClose, selectedPlotName }) {
   const [messages, setMessages] = useState([
     {
@@ -933,8 +915,8 @@ function SearchModal({ isOpen, onClose, onSelectFloor }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl flex flex-col text-zinc-100">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6 text-zinc-100 animate-in fade-in duration-300">
+      <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl flex flex-col">
         <div className="flex justify-between items-center pb-4 border-b border-zinc-800">
           <h3 className="font-serif text-xl text-zinc-200">Estate Tier Registry</h3>
           <button onClick={onClose} className="text-zinc-400 hover:text-white text-sm uppercase tracking-widest">Close ✕</button>
@@ -956,7 +938,7 @@ function SearchModal({ isOpen, onClose, onSelectFloor }) {
             <div
               key={item.id}
               onClick={() => { onSelectFloor(item); onClose(); }}
-              className="p-4 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-red-700/60 rounded-xl flex items-center justify-between cursor-pointer transition-all group"
+              className="p-4 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-red-700/60 rounded-xl flex items-center justify-between cursor-pointer transition-all duration-300 hover:scale-[1.01] group"
             >
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-red-400 font-bold block">{item.floor}</span>
@@ -975,11 +957,12 @@ function SearchModal({ isOpen, onClose, onSelectFloor }) {
   );
 }
 
+// Info Modal for Top Navigation (ABOUT, CONTACT, KNOW MORE)
 function SectionModal({ title, subtitle, content, isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6 text-zinc-100 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6 text-zinc-100 animate-in fade-in duration-300">
       <div className="w-full max-w-2xl bg-[#0c0d12] border border-zinc-800 rounded-3xl p-8 shadow-2xl flex flex-col">
         <div className="flex justify-between items-start pb-5 border-b border-zinc-800">
           <div>
@@ -1000,7 +983,7 @@ function SectionModal({ title, subtitle, content, isOpen, onClose }) {
         <div className="pt-4 border-t border-zinc-800 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-bold uppercase tracking-widest text-zinc-200"
+            className="px-6 py-2.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-bold uppercase tracking-widest text-zinc-200 transition-colors"
           >
             Understood
           </button>
@@ -1064,10 +1047,10 @@ function DetailedPlotModal({ plot, floor, onClose, onConsultBroker }) {
               <button
                 key={idx}
                 onClick={() => setActivePhotoIdx(idx)}
-                className={`relative h-20 rounded-xl overflow-hidden border transition-all ${
+                className={`relative h-20 rounded-xl overflow-hidden border transition-all duration-300 ${
                   activePhotoIdx === idx 
                     ? 'border-red-500 scale-[1.02] shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
-                    : 'border-zinc-800 opacity-60 hover:opacity-100'
+                    : 'border-zinc-800 opacity-60 hover:opacity-100 hover:scale-[1.01]'
                 }`}
               >
                 <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -1116,7 +1099,7 @@ function DetailedPlotModal({ plot, floor, onClose, onConsultBroker }) {
                 onClose();
                 onConsultBroker(plot.gate);
               }}
-              className="flex-1 sm:flex-none px-6 py-3 bg-red-700 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-950/50"
+              className="flex-1 sm:flex-none px-6 py-3 bg-red-700 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-950/50 hover:scale-[1.02]"
             >
               Consult Broker Regarding This Plot
             </button>
@@ -1128,7 +1111,7 @@ function DetailedPlotModal({ plot, floor, onClose, onConsultBroker }) {
   );
 }
 
-// Main Application Root
+// Main Root Application
 export default function App() {
   const [activeFloor, setActiveFloor] = useState(null);
   const [activePlotDetails, setActivePlotDetails] = useState(null);
@@ -1139,25 +1122,63 @@ export default function App() {
   const [brokerInquiryPlot, setBrokerInquiryPlot] = useState(null);
   const [activeNavModal, setActiveNavModal] = useState(null);
 
+  // 1. Prevent Right-Click Casual Copying
+  useEffect(() => {
+    const handleContextMenu = (e) => e.preventDefault();
+    window.addEventListener('contextmenu', handleContextMenu);
+    return () => window.removeEventListener('contextmenu', handleContextMenu);
+  }, []);
+
+  // 2. Inject Google Fonts for Calligraphy Header & Keyframe Styles for Fog and Dissolve
   useEffect(() => {
     const link = document.createElement('link');
     link.href = 'https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Cinzel+Decorative:wght@700&display=swap';
     link.rel = 'stylesheet';
     document.head.appendChild(link);
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes smokeExpansion {
+        0% { transform: scale(0.35) rotate(0deg); opacity: 0; filter: blur(35px); }
+        50% { transform: scale(1.15) rotate(15deg); opacity: 0.98; filter: blur(24px); }
+        100% { transform: scale(1.75) rotate(30deg); opacity: 0; filter: blur(45px); }
+      }
+      .animate-smoke-burst {
+        animation: smokeExpansion 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      /* Custom Smooth Scrollbar for In-Page Panels */
+      .smooth-scroll-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+      .smooth-scroll-panel::-webkit-scrollbar-track {
+        background: #090a0f;
+      }
+      .smooth-scroll-panel::-webkit-scrollbar-thumb {
+        background: #27272a;
+        border-radius: 9999px;
+      }
+      .smooth-scroll-panel::-webkit-scrollbar-thumb:hover {
+        background: #dc2626;
+      }
+    `;
+    document.head.appendChild(style);
   }, []);
 
+  // Center-expanding charcoal fog dissolve sequence
   const handleOpenCategory = (floorItem) => {
     setActiveFloor(floorItem);
     setSmokeBurst(true);
     setDissolved(false);
 
+    // Initial center smoke envelope
     setTimeout(() => {
-      setDissolved(true);
-    }, 500);
+      setDissolved(true); // Content smoothly scales up & unfurls from center
+    }, 450);
 
+    // Fade out mist overlay smoothly
     setTimeout(() => {
       setSmokeBurst(false);
-    }, 1300);
+    }, 1450);
   };
 
   const handleConsultBrokerForPlot = (plotName) => {
@@ -1271,6 +1292,7 @@ export default function App() {
         onConsultBroker={handleConsultBrokerForPlot}
       />
 
+      {/* Nav Section Modals */}
       <SectionModal 
         isOpen={activeNavModal === 'about'} 
         onClose={() => setActiveNavModal(null)}
@@ -1285,6 +1307,11 @@ export default function App() {
             <p>
               Every level features four cardinal residential quadrants, constructed without iron fasteners using authentic mortise-and-tenon cedar joinery, acoustic volcanic basalt, and thermal spring integration.
             </p>
+            <div className="pt-3 border-t border-zinc-800/80">
+              <p className="text-[11px] font-mono text-zinc-500">
+                © 2026 AURA Mountain Estate. All Rights Reserved. Proprietary Demonstration.
+              </p>
+            </div>
           </>
         }
       />
@@ -1302,6 +1329,11 @@ export default function App() {
             <p>
               <strong>Private Infrastructure:</strong> Dedicated heliport pads on Floor 6, high-speed pneumatic elevators, subterranean private wine cellars, and on-demand helicopter transfers to nearby metropolitan hubs.
             </p>
+            <div className="pt-3 border-t border-zinc-800/80">
+              <p className="text-[11px] font-mono text-zinc-500">
+                © 2026 AURA Mountain Estate. All Rights Reserved. Proprietary Demonstration.
+              </p>
+            </div>
           </>
         }
       />
@@ -1321,57 +1353,98 @@ export default function App() {
               Diplomatic Concierge: desk@aura-mountain-estate.com<br />
               Helicopter Transfer Coordinates: 30°23'N 103°55'E
             </p>
+            <div className="pt-3 border-t border-zinc-800/80">
+              <p className="text-[11px] font-mono text-zinc-500">
+                © 2026 AURA Mountain Estate. All Rights Reserved. Proprietary Demonstration.
+              </p>
+            </div>
           </>
         }
       />
 
-      {/* Smoke Burst Transition */}
+      {/* ========================================================================= */}
+      {/* VOLUMETRIC CHARCOAL GREY SHADOW FOG & SMOKE DISSOLVE EFFECT               */}
+      {/* Expands from the center, clouds the view, and dissolves outwards smoothly  */}
+      {/* ========================================================================= */}
       {smokeBurst && (
         <div className="fixed inset-0 z-[70] pointer-events-none flex items-center justify-center overflow-hidden">
-          <div className="absolute w-[150vw] h-[150vh] rounded-full bg-[radial-gradient(circle,rgba(24,24,27,0.92)_0%,rgba(9,9,11,0.85)_40%,transparent_75%)] filter blur-3xl animate-ping duration-1000" />
-          <div className="absolute w-[120vw] h-[120vh] rounded-full bg-[radial-gradient(circle,rgba(140,3,22,0.4)_0%,rgba(10,10,12,0.9)_50%,transparent_80%)] filter blur-2xl animate-pulse" />
+          {/* Layer 1: Core Expanding Charcoal Ink Vortex */}
+          <div 
+            className="absolute w-[160vw] h-[160vh] rounded-full animate-smoke-burst"
+            style={{
+              background: 'radial-gradient(circle at center, rgba(16,18,24,0.98) 0%, rgba(28,31,40,0.85) 45%, rgba(10,12,16,0.6) 65%, transparent 85%)'
+            }}
+          />
+          {/* Layer 2: Secondary Shadow Mist Cloud */}
+          <div 
+            className="absolute w-[130vw] h-[130vh] rounded-full filter blur-3xl animate-pulse"
+            style={{
+              background: 'radial-gradient(circle at center, rgba(40,43,54,0.85) 0%, rgba(20,22,28,0.7) 40%, transparent 75%)',
+              transition: 'transform 1.4s ease-out, opacity 1.2s ease-out'
+            }}
+          />
+          {/* Layer 3: Dynamic Center Dissolve Vignette */}
+          <div 
+            className="absolute inset-0 bg-[#090a0f]/80 backdrop-blur-2xl transition-opacity duration-1000 ease-in-out"
+            style={{
+              maskImage: 'radial-gradient(circle at center, transparent 0%, black 100%)',
+              WebkitMaskImage: 'radial-gradient(circle at center, transparent 0%, black 100%)'
+            }}
+          />
         </div>
       )}
 
-      {/* 10-Plot Category Catalog Modal */}
+      {/* ========================================================================= */}
+      {/* 10-PLOT CATEGORY CATALOG MODAL (SMOOTH DISSOLVE & IN-PAGE EXPANSION)       */}
+      {/* ========================================================================= */}
       {activeFloor && !activePlotDetails && (
         <div 
           style={{
-            filter: dissolved ? 'blur(0px) contrast(100%)' : 'blur(20px) contrast(180%)',
-            opacity: dissolved ? 1 : 0.05,
-            transition: 'filter 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.65s ease-out'
+            transform: dissolved ? 'scale(1) translateY(0px)' : 'scale(0.96) translateY(24px)',
+            filter: dissolved ? 'blur(0px) contrast(100%)' : 'blur(22px) contrast(170%)',
+            opacity: dissolved ? 1 : 0,
+            transition: 'transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), filter 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s ease-out',
+            maskImage: dissolved 
+              ? 'radial-gradient(circle at center, black 100%, black 100%)'
+              : 'radial-gradient(circle at center, transparent 15%, black 85%)',
+            WebkitMaskImage: dissolved
+              ? 'radial-gradient(circle at center, black 100%, black 100%)'
+              : 'radial-gradient(circle at center, transparent 15%, black 85%)'
           }}
-          className="absolute inset-0 z-50 flex flex-col p-8 lg:p-14 bg-gradient-to-br from-[#09090b]/98 via-[#121318]/98 to-[#050507]/98 backdrop-blur-3xl text-zinc-100 overflow-y-auto"
+          className="absolute inset-0 z-50 flex flex-col p-8 lg:p-14 bg-gradient-to-br from-[#09090b]/98 via-[#121318]/98 to-[#050507]/98 backdrop-blur-3xl text-zinc-100 overflow-y-auto scroll-smooth smooth-scroll-panel"
         >
           <button 
-            onClick={() => setActiveFloor(null)}
-            className="absolute top-8 right-8 text-zinc-400 hover:text-white transition-colors uppercase tracking-widest text-xs font-bold flex items-center gap-2 group z-20"
+            onClick={() => {
+              setDissolved(false);
+              setTimeout(() => setActiveFloor(null), 350);
+            }}
+            className="absolute top-8 right-8 text-zinc-400 hover:text-white transition-all uppercase tracking-widest text-xs font-bold flex items-center gap-2 group z-20 hover:scale-105"
           >
             Return to Estate
             <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
 
-          <div className="max-w-4xl mt-2 relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-red-400 text-xs font-bold tracking-widest uppercase mb-2">
+          <div className="max-w-4xl mt-2 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-red-400 text-xs font-bold tracking-widest uppercase mb-2 shadow-inner">
               <span>{activeFloor.floor}</span>
               <span>•</span>
               <span>{activeFloor.kanji} Residences // 10 Active Plots</span>
             </div>
             <h1 className="text-4xl lg:text-6xl font-serif text-zinc-100">{activeFloor.name}</h1>
             <p className="text-zinc-400 max-w-2xl text-sm lg:text-base font-light leading-relaxed mt-2">
-              {activeFloor.desc} Click any plot card to open complete architectural schematics and 4 photographic angles.
+              {activeFloor.desc} Click any plot card below to smoothly reveal complete architectural schematics and 4 photographic angles.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 mt-8 flex-grow relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 mt-8 flex-grow relative z-10 pb-10">
             {activeFloor.plots.map((plot) => (
               <div 
                 key={plot.id} 
                 onClick={() => setActivePlotDetails(plot)}
-                className="bg-zinc-900/80 border border-zinc-800 hover:border-red-600/70 shadow-2xl transition-all duration-300 p-4 rounded-2xl flex flex-col justify-between group backdrop-blur-md relative overflow-hidden cursor-pointer"
+                className="bg-zinc-900/80 border border-zinc-800 hover:border-red-600/70 shadow-2xl transition-all duration-500 hover:-translate-y-1.5 p-4 rounded-2xl flex flex-col justify-between group backdrop-blur-md relative overflow-hidden cursor-pointer hover:shadow-[0_15px_35px_rgba(220,38,38,0.18)]"
               >
                 <div className="w-full h-40 rounded-xl overflow-hidden relative border border-zinc-800 mb-3 bg-black">
-                  <img src={plot.img} alt={plot.gate} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 filter brightness-90" />
+                  <img src={plot.img} alt={plot.gate} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 filter brightness-90" />
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 border border-zinc-700 text-[9px] uppercase tracking-widest text-zinc-300 font-mono">
                     Plot {plot.id}
                   </div>
@@ -1393,7 +1466,7 @@ export default function App() {
                     e.stopPropagation();
                     setActivePlotDetails(plot);
                   }}
-                  className="mt-4 w-full py-2 bg-zinc-900 group-hover:bg-red-800 border border-zinc-700 group-hover:border-red-600 text-zinc-200 group-hover:text-white text-[10px] uppercase tracking-widest font-bold transition-all rounded-xl shadow-lg"
+                  className="mt-4 w-full py-2 bg-zinc-900 group-hover:bg-red-800 border border-zinc-700 group-hover:border-red-600 text-zinc-200 group-hover:text-white text-[10px] uppercase tracking-widest font-bold transition-all duration-300 rounded-xl shadow-lg"
                 >
                   Inspect Plot & 4 Views →
                 </button>
@@ -1429,7 +1502,7 @@ export default function App() {
           
           <BakeShadows />
           
-          {/* Shining Anime-Style Celestial Star Field (Replaces Clunky Clouds) */}
+          {/* Shining Anime-Style Celestial Star Field (Full Background) */}
           <AnimeCelestialStarfield count={950} />
 
           <PaleCelestialMoon />
@@ -1447,11 +1520,18 @@ export default function App() {
           </ScrollControls>
 
           <EffectComposer disableNormalPass multisampling={0}>
-            {/* Tuned bloom pass allowing stars and cherry blossom petals to emit anime-like glows */}
+            {/* Tuned bloom pass allowing stars and cherry blossom petals to emit crisp anime glows */}
             <Bloom luminanceThreshold={0.72} intensity={1.3} mipmapBlur />
             <Vignette eskil={false} offset={0.14} darkness={0.85} />
           </EffectComposer>
         </Canvas>
+      </div>
+
+      {/* Fixed Subtle Copyright Stamp in Lower Left */}
+      <div className="absolute bottom-3 left-6 z-30 pointer-events-none opacity-40">
+        <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">
+          © 2026 AURA Mountain Estate. All Rights Reserved. Proprietary Demonstration.
+        </span>
       </div>
     </div>
   );

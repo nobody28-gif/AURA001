@@ -1,13 +1,16 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 export default defineConfig({
-  root: __dirname,
   plugins: [react()],
-  server: {
-    watch: {
-      ignored: ['**/node_modules/**', 'C:/Windows/**'],
+  build: {
+    sourcemap: false, // Ensures raw source code cannot be viewed in DevTools
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Strips console.log outputs
+        drop_debugger: true,
+      },
     },
   },
 });
