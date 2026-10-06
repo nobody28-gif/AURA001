@@ -1,16 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   build: {
-    sourcemap: false, // Ensures raw source code cannot be viewed in DevTools
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Strips console.log outputs
-        drop_debugger: true,
-      },
-    },
+    sourcemap: false, // Keeps source code hidden in DevTools
+    minify: 'esbuild', // Uses Vite's native high-speed minifier (no extra install needed)
+  },
+  esbuild: {
+    drop: ['console', 'debugger'], // Strips console.log & debuggers automatically
   },
 });
