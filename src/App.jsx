@@ -1478,53 +1478,21 @@ export default function App() {
 
       {/* --- 3D CANVAS LAYER --- */}
       <div className="absolute top-0 left-0 w-full h-full z-10">
-        <Canvas 
-          shadows
-          dpr={[1, 1.25]} 
-          camera={{ position: [0, 0, 35], fov: 22, near: 0.1, far: 250 }}
-          gl={{ antialias: true, powerPreference: "high-performance" }}
-        >
-          {/* Subtle Charcoal Celestial Sky Fog */}
-          <fog attach="fog" args={['#07080c', 28, 110]} />
-          
-          <SnappingControls enabled={true} />
-          
-          <ambientLight intensity={0.65} color="#e4e4e7" />
-          <directionalLight 
-            position={[-40, 50, -80]} 
-            intensity={3.4} 
-            color="#f4f4f5"
-            castShadow 
-            shadow-mapSize={[1024, 1024]} 
-            shadow-bias={-0.0001}
-          />
-          <directionalLight position={[30, 20, 40]} intensity={0.8} color="#71717a" />
-          
-          <BakeShadows />
-          
-          {/* Shining Anime-Style Celestial Star Field (Full Background) */}
-          <AnimeCelestialStarfield count={950} />
-
-          <PaleCelestialMoon />
-          <DistantCranes />
-          <RedCherryBlossom />
-
-          {/* Elevator Scroll Managing Pagoda & Smooth Ascend Handler */}
-          <ScrollControls pages={8} damping={0.25} snap>
-            <Suspense fallback={null}>
-              <SceneController 
-                onOpenCategory={handleOpenCategory} 
-                onExploreClick={() => setActiveNavModal('know_more')} 
-              />
-            </Suspense>
-          </ScrollControls>
-
-          <EffectComposer disableNormalPass multisampling={0}>
-            {/* Tuned bloom pass allowing stars and cherry blossom petals to emit crisp anime glows */}
-            <Bloom luminanceThreshold={0.72} intensity={1.3} mipmapBlur />
-            <Vignette eskil={false} offset={0.14} darkness={0.85} />
-          </EffectComposer>
-        </Canvas>
+        <Canvas
+  shadows
+  dpr={[1, 1.25]}
+  camera={{ position: [0, 0, 35], fov: 22, near: 0.1, far: 250 }}
+  gl={{ antialias: true, powerPreference: "high-performance" }}
+>
+  <Suspense fallback={<Html center><div className="text-white font-mono text-sm">Loading Celestial Estate...</div></Html>}>
+    <SceneController 
+      onOpenCategory={handleOpenCategory} 
+      onExploreClick={() => setActiveNavModal('know_more')} 
+      isMobile={isMobile}
+    />
+  </Suspense>
+  {/* ... rest of components */}
+</Canvas>
       </div>
 
       {/* Fixed Subtle Copyright Stamp in Lower Left */}
