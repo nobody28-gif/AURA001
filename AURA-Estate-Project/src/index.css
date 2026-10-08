@@ -2,9 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+html, body, #root {
+  width: 100%;
+  height: 100%;
   margin: 0;
-  background-color: #030303;
-  color: #f5f5f7;
+  padding: 0;
   overflow: hidden;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  background-color: #07080c;
+}
+
+/* Force Three.js canvas and Drei virtual scroll containers to permit vertical finger swiping */
+canvas,
+div[style*="overflow: auto"],
+div[style*="overflow: scroll"],
+div[data-overlayscrollbars-viewport] {
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.smooth-scroll-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.smooth-scroll-panel::-webkit-scrollbar-track {
+  background: #090a0f;
+}
+.smooth-scroll-panel::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+.smooth-scroll-panel::-webkit-scrollbar-thumb:hover {
+  background: #dc2626;
 }

@@ -4,6 +4,120 @@ import { ScrollControls, Scroll, useScroll, useGLTF, OrbitControls, ContactShado
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
+// -------------------------------------------------------------
+// 1. SMOOTH ZERO-LAG 50-FRAME BACKGROUND SCRUBBER
+// -------------------------------------------------------------
+const TOTAL_FRAMES = 50;
+
+const getFramePath = (index) => {
+  const padIndex = String(index).padStart(3, '0');
+  return `/frames/frame_${padIndex}.jpg`;
+};
+
+// Global scroll offset holder (Direct 60fps update without re-rendering React)
+export const globalScrollRef = { current: 0 };
+
+function FrameSequenceBackground() {
+  const canvasRef = useRef(null);
+  const imagesRef = useRef([]);
+  const lastRenderedIndex = useRef(-1);
+  const animFrameId = useRef(null);
+
+  // Preload and decode all 50 frames
+  useEffect(() => {
+    const imgs = [];
+    for (let i = 1; i <= TOTAL_FRAMES; i++) {
+      const img = new Image();
+      img.src = getFramePath(i);
+      if ('decode' in img) {
+        img.decode().catch(() => {});
+      }
+      imgs.push(img);
+    }
+    imagesRef.current = imgs;
+  }, []);
+
+  const drawFrame = (frameIndex) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = imagesRef.current[frameIndex];
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    if (width === 0 || height === 0) return;
+
+    const imgAspect = img.naturalWidth / img.naturalHeight;
+    const canvasAspect = width / height;
+
+    let drawW, drawH, drawX, drawY;
+    if (canvasAspect > imgAspect) {
+      drawW = width;
+      drawH = width / imgAspect;
+      drawX = 0;
+      drawY = (height - drawH) / 2;
+    } else {
+      drawH = height;
+      drawW = height * imgAspect;
+      drawX = (width - drawW) / 2;
+      drawY = 0;
+    }
+
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    lastRenderedIndex.current = frameIndex;
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (canvasRef.current) {
+        canvasRef.current.width = window.innerWidth;
+        canvasRef.current.height = window.innerHeight;
+        if (lastRenderedIndex.current >= 0) {
+          drawFrame(lastRenderedIndex.current);
+        } else {
+          drawFrame(0);
+        }
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    const loop = () => {
+      const offset = globalScrollRef.current;
+      const targetIndex = Math.min(
+        TOTAL_FRAMES - 1,
+        Math.max(0, Math.floor(offset * (TOTAL_FRAMES - 1)))
+      );
+
+      if (targetIndex !== lastRenderedIndex.current) {
+        drawFrame(targetIndex);
+      }
+      animFrameId.current = requestAnimationFrame(loop);
+    };
+
+    animFrameId.current = requestAnimationFrame(loop);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+    };
+  }, []);
+
+  return (
+    <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden z-0">
+      <canvas ref={canvasRef} className="w-full h-full object-cover filter brightness-80 contrast-105" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#06070a] via-[#07080c]/50 to-[#06070a]/80 pointer-events-none" />
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// 2. PLOT & FLOOR DATA
+// -------------------------------------------------------------
 const PLOT_IMAGES = [
   'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
@@ -193,6 +307,9 @@ const ESTATE_DATA = [
   }
 ];
 
+// -------------------------------------------------------------
+// 3. SAFE 3D MESHES & ENVIRONMENT
+// -------------------------------------------------------------
 function PagodaModel() {
   const { scene } = useGLTF('/scene.gltf'); 
 
@@ -364,7 +481,6 @@ function PaleCelestialMoon() {
   );
 }
 
-// 100% Native Billboard HTML Card: Eliminates CSS 3D Box Occlusion Glitches Completely
 function SinglePlotAnchor({ plot, floorData, onDirectEnquire, isMobile }) {
   const [isVisible, setIsVisible] = useState(false);
   const cardGroupRef = useRef();
@@ -373,7 +489,6 @@ function SinglePlotAnchor({ plot, floorData, onDirectEnquire, isMobile }) {
   useFrame((state) => {
     if (!cardGroupRef.current) return;
 
-    // Never render on Hero Screen (top) or Ground Level (bottom)
     if (scroll.offset < 0.08 || scroll.offset > 0.94) {
       if (isVisible) setIsVisible(false);
       return;
@@ -383,21 +498,17 @@ function SinglePlotAnchor({ plot, floorData, onDirectEnquire, isMobile }) {
     const cardWorldPos = new THREE.Vector3();
     cardGroupRef.current.getWorldPosition(cardWorldPos);
 
-    // Vertical elevation window: only show when camera is level with this floor
     const verticalDist = Math.abs(cameraPos.y - cardWorldPos.y);
     if (verticalDist > 4.2) {
       if (isVisible) setIsVisible(false);
       return;
     }
 
-    // Camera view angle calculation
     const cameraAngle = Math.atan2(cameraPos.x, cameraPos.z);
     let diff = Math.abs(cameraAngle - plot.angle);
     while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
 
-    // Only visible when camera is looking directly at this cardinal quadrant (< 42 degrees)
     const shouldShow = diff < 0.72;
-
     if (isVisible !== shouldShow) {
       setIsVisible(shouldShow);
     }
@@ -410,11 +521,7 @@ function SinglePlotAnchor({ plot, floorData, onDirectEnquire, isMobile }) {
   return (
     <group ref={cardGroupRef} position={[x, 0, z]}>
       {isVisible && (
-        <Html
-          center
-          distanceFactor={isMobile ? 18 : 16}
-          zIndexRange={[10, 40]}
-        >
+        <Html center distanceFactor={isMobile ? 18 : 16} zIndexRange={[10, 40]}>
           <div 
             className="w-48 sm:w-56 p-2.5 sm:p-3 rounded-2xl bg-[#0f1015]/95 backdrop-blur-xl border border-zinc-700/60 shadow-[0_10px_35px_rgba(0,0,0,0.85)] text-zinc-100 font-sans select-none cursor-pointer group hover:scale-105 transition-all duration-200"
             onClick={() => onDirectEnquire(plot, floorData)}
@@ -450,7 +557,6 @@ function SinglePlotAnchor({ plot, floorData, onDirectEnquire, isMobile }) {
   );
 }
 
-// Floor Orbiting Layer
 function FloorOrbitingPlots({ floorData, onOpenCategory, onDirectEnquire, isMobile }) {
   const topFourPlots = floorData.plots.slice(0, 4);
   const scroll = useScroll();
@@ -512,6 +618,9 @@ function ElevatorBuilding({ onOpenCategory, onDirectEnquire, isMobile }) {
   const groupRef = useRef();
 
   useFrame((_, delta) => {
+    // Direct ref mutation for buttery 60 FPS background scrubbing
+    globalScrollRef.current = scroll.offset;
+
     const startY = -42; 
     const endY = -4; 
     const targetY = startY + (scroll.offset * (endY - startY));
@@ -560,11 +669,13 @@ function ResponsiveCameraDirector({ isMobile, isTablet }) {
 
 function SceneController({ onOpenCategory, onDirectEnquire, onExploreClick, isMobile }) {
   const scroll = useScroll();
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const heroHintRef = useRef();
 
   useFrame(() => {
-    if (Math.abs(scroll.offset - scrollProgress) > 0.01) {
-      setScrollProgress(scroll.offset);
+    if (heroHintRef.current) {
+      const isVisible = scroll.offset <= 0.04;
+      heroHintRef.current.style.opacity = isVisible ? '0.65' : '0';
+      heroHintRef.current.style.pointerEvents = isVisible ? 'auto' : 'none';
     }
   });
 
@@ -621,11 +732,8 @@ function SceneController({ onOpenCategory, onDirectEnquire, onExploreClick, isMo
           </div>
 
           <div 
-            style={{ 
-              opacity: scrollProgress > 0.04 ? 0 : 0.65,
-              pointerEvents: scrollProgress > 0.04 ? 'none' : 'auto',
-              transition: 'opacity 0.2s ease-out'
-            }}
+            ref={heroHintRef}
+            style={{ transition: 'opacity 0.2s ease-out' }}
             className="absolute bottom-6 sm:bottom-10 flex flex-col items-center gap-1 animate-bounce"
           >
             <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-zinc-400 uppercase">Scroll to Ascend Levels</span>
@@ -732,7 +840,9 @@ function SnappingControls({ enabled }) {
   ) : null;
 }
 
-// Master Chen Real Estate AI with Instant Pop-Up
+// -------------------------------------------------------------
+// 4. MASTER CHEN REAL ESTATE AI CONCIERGE DRAWER
+// -------------------------------------------------------------
 function GeminiRealEstateBrokerDrawer({ isOpen, onClose, selectedPlotName, initialContextPrompt }) {
   const [messages, setMessages] = useState([
     {
@@ -1111,6 +1221,9 @@ function DetailedPlotModal({ plot, floor, onClose, onConsultBroker }) {
   );
 }
 
+// -------------------------------------------------------------
+// 5. MAIN APPLICATION COMPONENT
+// -------------------------------------------------------------
 export default function App() {
   const [activeFloor, setActiveFloor] = useState(null);
   const [activePlotDetails, setActivePlotDetails] = useState(null);
@@ -1199,8 +1312,11 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen bg-gradient-to-b from-[#06070a] via-[#0d0e14] to-[#040407] overflow-hidden font-sans select-none">
+    <div className="relative w-screen h-screen bg-[#07080c] overflow-hidden font-sans select-none">
       
+      {/* LAYER 0: Background Image Sequence Scrubber */}
+      <FrameSequenceBackground />
+
       {/* Top Header Navigation */}
       <header className="absolute top-0 left-0 w-full px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-50 bg-[#07080c]/90 backdrop-blur-2xl border-b border-zinc-800/80 shadow-2xl pointer-events-auto">
         <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer" onClick={() => window.location.reload()}>
@@ -1487,7 +1603,7 @@ export default function App() {
       )}
 
       {/* 3D CANVAS LAYER */}
-      <div className="absolute top-0 left-0 w-full h-full z-10">
+      <div className="absolute top-0 left-0 w-full h-full z-10 pointer-events-auto">
         <Suspense fallback={
           <div className="w-full h-full flex flex-col items-center justify-center bg-[#07080c] text-zinc-400">
             <div className="w-8 h-8 rounded-full border-2 border-red-600 border-t-transparent animate-spin mb-3"></div>
@@ -1498,11 +1614,11 @@ export default function App() {
             shadows
             dpr={[1, 1.25]} 
             camera={{ position: [0, 0, 35], fov: 22, near: 0.1, far: 250 }}
-            gl={{ antialias: true, powerPreference: "high-performance" }}
+            gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
           >
             <ResponsiveCameraDirector isMobile={isMobile} isTablet={isTablet} />
 
-            <fog attach="fog" args={['#07080c', 28, 110]} />
+            <fog attach="fog" args={['#07080c', 35, 120]} />
             
             <SnappingControls enabled={true} />
             
@@ -1541,7 +1657,7 @@ export default function App() {
         </Suspense>
       </div>
 
-      {/* Subtle Copyright Footer in Bottom Left */}
+      {/* Subtle Copyright Footer */}
       <div className="absolute bottom-2 sm:bottom-3 left-4 sm:left-6 z-30 pointer-events-none opacity-40">
         <span className="text-[8px] sm:text-[10px] font-mono tracking-widest text-zinc-500 uppercase">
           © 2026 AURA Mountain Estate. All Rights Reserved. Proprietary Demonstration.
