@@ -5,117 +5,7 @@ import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
 // -------------------------------------------------------------
-// 1. SMOOTH ZERO-LAG 50-FRAME BACKGROUND SCRUBBER
-// -------------------------------------------------------------
-const TOTAL_FRAMES = 50;
-
-const getFramePath = (index) => {
-  const padIndex = String(index).padStart(3, '0');
-  return `/frames/frame_${padIndex}.jpg`;
-};
-
-// Global scroll offset holder (Direct 60fps update without re-rendering React)
-export const globalScrollRef = { current: 0 };
-
-function FrameSequenceBackground() {
-  const canvasRef = useRef(null);
-  const imagesRef = useRef([]);
-  const lastRenderedIndex = useRef(-1);
-  const animFrameId = useRef(null);
-
-  useEffect(() => {
-    const imgs = [];
-    for (let i = 1; i <= TOTAL_FRAMES; i++) {
-      const img = new Image();
-      img.src = getFramePath(i);
-      if ('decode' in img) {
-        img.decode().catch(() => {});
-      }
-      imgs.push(img);
-    }
-    imagesRef.current = imgs;
-  }, []);
-
-  const drawFrame = (frameIndex) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const img = imagesRef.current[frameIndex];
-    if (!img || !img.complete || img.naturalWidth === 0) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-    if (width === 0 || height === 0) return;
-
-    const imgAspect = img.naturalWidth / img.naturalHeight;
-    const canvasAspect = width / height;
-
-    let drawW, drawH, drawX, drawY;
-    if (canvasAspect > imgAspect) {
-      drawW = width;
-      drawH = width / imgAspect;
-      drawX = 0;
-      drawY = (height - drawH) / 2;
-    } else {
-      drawH = height;
-      drawW = height * imgAspect;
-      drawX = (width - drawW) / 2;
-      drawY = 0;
-    }
-
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
-    lastRenderedIndex.current = frameIndex;
-  };
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (canvasRef.current) {
-        canvasRef.current.width = window.innerWidth;
-        canvasRef.current.height = window.innerHeight;
-        if (lastRenderedIndex.current >= 0) {
-          drawFrame(lastRenderedIndex.current);
-        } else {
-          drawFrame(0);
-        }
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    const loop = () => {
-      const offset = globalScrollRef.current;
-      const targetIndex = Math.min(
-        TOTAL_FRAMES - 1,
-        Math.max(0, Math.floor(offset * (TOTAL_FRAMES - 1)))
-      );
-
-      if (targetIndex !== lastRenderedIndex.current) {
-        drawFrame(targetIndex);
-      }
-      animFrameId.current = requestAnimationFrame(loop);
-    };
-
-    animFrameId.current = requestAnimationFrame(loop);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-    };
-  }, []);
-
-  return (
-    <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden z-0">
-      <canvas ref={canvasRef} className="w-full h-full object-cover filter brightness-80 contrast-105" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#06070a] via-[#07080c]/50 to-[#06070a]/80 pointer-events-none" />
-    </div>
-  );
-}
-
-// -------------------------------------------------------------
-// 2. PLOT & FLOOR DATA
+// 1. PLOT & FLOOR DATA
 // -------------------------------------------------------------
 const PLOT_IMAGES = [
   'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
@@ -307,7 +197,7 @@ const ESTATE_DATA = [
 ];
 
 // -------------------------------------------------------------
-// 3. 3D MODELS & VISUAL ASSETS
+// 2. 3D MODELS & VISUAL ASSETS
 // -------------------------------------------------------------
 function PagodaModel() {
   const { scene } = useGLTF('/scene.gltf'); 
@@ -430,7 +320,6 @@ function RedCherryBlossom({ count = 220 }) {
       temp.push({
         x: (Math.random() - 0.5) * 85,
         y: Math.random() * 80 - 30,
-        z: (Math.random() - 0.5) * 65,
         speed: 0.6 + Math.random() * 1.5,
         spin: 0.02 + Math.random() * 0.04,
         drift: (Math.random() - 0.5) * 1.8
@@ -585,7 +474,7 @@ function FloorOrbitingPlots({ floorData, onOpenCategory, onDirectEnquire, isMobi
           plot={plot} 
           floorData={floorData} 
           onDirectEnquire={onDirectEnquire}
-          isMobile={isMobile}
+          isMobile={isMobile} 
         />
       ))}
 
@@ -617,8 +506,6 @@ function ElevatorBuilding({ onOpenCategory, onDirectEnquire, isMobile }) {
   const groupRef = useRef();
 
   useFrame((_, delta) => {
-    globalScrollRef.current = scroll.offset;
-
     const startY = -42; 
     const endY = -4; 
     const targetY = startY + (scroll.offset * (endY - startY));
@@ -832,7 +719,6 @@ function SnappingControls({ enabled }) {
       maxPolarAngle={Math.PI / 1.8} 
       enableDamping={true}
       dampingFactor={0.06} 
-      // Mobile Touch Fix: Prevents 1-finger vertical swipes from locking up Drei scroll
       touches={{
         ONE: THREE.TOUCH.ROTATE,
         TWO: THREE.TOUCH.DOLLY_PAN
@@ -844,7 +730,7 @@ function SnappingControls({ enabled }) {
 }
 
 // -------------------------------------------------------------
-// 4. MASTER CHEN REAL ESTATE AI CONCIERGE DRAWER
+// 3. MASTER CHEN REAL ESTATE AI CONCIERGE DRAWER
 // -------------------------------------------------------------
 function GeminiRealEstateBrokerDrawer({ isOpen, onClose, selectedPlotName, initialContextPrompt }) {
   const [messages, setMessages] = useState([
@@ -1225,7 +1111,7 @@ function DetailedPlotModal({ plot, floor, onClose, onConsultBroker }) {
 }
 
 // -------------------------------------------------------------
-// 5. MAIN APPLICATION
+// 4. MAIN APPLICATION
 // -------------------------------------------------------------
 export default function App() {
   const [activeFloor, setActiveFloor] = useState(null);
@@ -1304,9 +1190,6 @@ export default function App() {
   return (
     <div className="relative w-screen h-screen bg-[#07080c] overflow-hidden font-sans select-none touch-pan-y">
       
-      {/* LAYER 0: Background Image Sequence Scrubber */}
-      <FrameSequenceBackground />
-
       {/* Top Header Navigation */}
       <header className="absolute top-0 left-0 w-full px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-50 bg-[#07080c]/90 backdrop-blur-2xl border-b border-zinc-800/80 shadow-2xl pointer-events-auto">
         <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer" onClick={() => window.location.reload()}>
@@ -1584,7 +1467,7 @@ export default function App() {
             shadows
             dpr={[1, 1.25]} 
             camera={{ position: [0, 0, 35], fov: 22, near: 0.1, far: 250 }}
-            gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
+            gl={{ antialias: true, powerPreference: "high-performance" }}
           >
             <ResponsiveCameraDirector isMobile={isMobile} isTablet={isTablet} />
 
